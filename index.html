@@ -8,15 +8,27 @@
 		<div id="app">
 			<span>{{ message }}</span>
 			
-			<div class="weather" v-if="slc_weather">
+			<div v-for="(cityId, cityName) in known_cities">
+				<input 
+					type="radio" 
+					name="cityweather" 
+					v-bind:id="cityId" 
+					v-bind:value="cityId" 
+					v-model="selectedCity"
+					v-on:change="fetchWeather(cityId)">
+				<label v-bind:for="cityId">{{cityName}}</label>
+				<br>
+			</div>
+			
+			<div class="weather" v-if="weather">
 				<section class="header">
-					<h3 class="city">{{ slc_weather.city.name }}, {{ slc_weather.city.country }}</h3>
-					<em class="coordinates">( {{ slc_weather.city.coord.lat }}, {{ slc_weather.city.coord.lon }} )</em>
+					<h3 class="city">{{ weather.city.name }}, {{ weather.city.country }}</h3>
+					<em class="coordinates">( {{ weather.city.coord.lat }}, {{ weather.city.coord.lon }} )</em>
 				</section>
-				<!-- <pre>{{ slc_weather }}</pre> -->
+				<!-- <pre>{{ weather }}</pre> -->
 				<section class="data">
 					<!-- weather api response reference: https://openweathermap.org/forecast5#parameter -->
-					<div class="day" v-for="day in slc_weather.list">
+					<div class="day" v-for="day in weather.list">
 						<some-data v-bind:t="'Date'" v-bind:d="day.dt_txt"></some-data>
 						<some-data v-bind:t="'Weather'" v-bind:d="day.weather[0].main" v-bind:title="`(${day.weather[0].description})`"></some-data>
 						<some-data v-bind:t="'Temp'" v-bind:d="`${kToF(day.main.temp)} (${kToF(day.main.temp_min)} - ${kToF(day.main.temp_max)})`"></some-data>
@@ -24,8 +36,8 @@
 						<some-data v-bind:t="'Humidity'" v-bind:d="`${day.main.humidity}%`"></some-data>
 						<some-data v-bind:t="'Cloudiness'" v-bind:d="`${day.clouds.all}%`"></some-data>
 						<some-data v-bind:t="'Wind'" v-bind:d="`${day.wind.speed} ${day.wind.deg}`"></some-data>
-						<some-data v-bind:t="'Rain'" v-bind:d="`${day.rain['3h']}`"></some-data>
-						<some-data v-bind:t="'Snow'" v-bind:d="`${day.snow['3h']}`"></some-data>
+						<some-data v-if="day.rain && day.rain['3h']" v-bind:t="'Rain'" v-bind:d="`${day.rain['3h']}`"></some-data>
+						<some-data v-if="day.snow && day.snow['3h']" v-bind:t="'Snow'" v-bind:d="`${day.snow['3h']}`"></some-data>
 						
 						<!--<pre>{{ day }}</pre>-->
 					</div>
@@ -39,9 +51,6 @@
 
 		<script>
 			var slc_forecast = "https://api.openweathermap.org/data/2.5/forecast?id=5780993&APPID=f3061e24862cb1b55f19b9acdc711e49";
-
-			fetch(slc_forecast).then(res => res.json().then(js => app.slc_weather = js));
-
 
 			Vue.component('some-data', {
 				props: ['t', 'd'],
@@ -61,11 +70,19 @@
 				el: "#app",
 				data: {
 					message: "hello world!",
-					slc_weather: null
+					selectedCity: null,
+					known_cities: {
+					"SLC": 5780993,
+					"Denver": 4463523,
+					"Cupertino": 5341145,
+					"Biloxi": 4418478
+				},
+					weather: null
 				},
 				methods: {
 					kToF: (k) => `${Math.round((k - 273.15) * 9/5 + 32)}°F`,
-					kToC: (k) => `${Math.round(k - 273.15)}°C`
+					kToC: (k) => `${Math.round(k - 273.15)}°C`,
+					fetchWeather: (cityId) => fetch(`https://api.openweathermap.org/data/2.5/forecast?id=${cityId}&APPID=f3061e24862cb1b55f19b9acdc711e49`).then(res => res.json()).then(js => app.weather = js)
 				}
 			});
 
@@ -75,6 +92,11 @@
 					message: `app2 loaded at ${new Date().toLocaleString()}`
 				}
 			});
+
+
+
+			fetch(slc_forecast).then(res => res.json().then(js => app.weather = js));
+
 		</script>
 		<style>
 			.weather {
